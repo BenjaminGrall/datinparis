@@ -107,66 +107,90 @@ class App extends React.Component {
 
 
   handleClick(e) {
-    this.state.search = true;
 
-    
-    //appel a l'API
-    var bodyFormData = new FormData();
 
-    bodyFormData.append('X1',this.station1.current.state.choosenMetro.long);
-    bodyFormData.append('X2',this.station2.current.state.choosenMetro.long);
-    bodyFormData.append('Y1',this.station1.current.state.choosenMetro.lat);
-    bodyFormData.append('Y2',this.station2.current.state.choosenMetro.lat);
-    console.log(bodyFormData);
-    var config = {
-      method: 'post',
-      url: 'https://datinparis.herokuapp.com/login',
-      headers: { "Content-Type": "multipart/form-data" },
-      data:bodyFormData,
-      responseType: 'stream'
-    };
-
-    axios(config).then(function(response){
-      console.log(response);
-      var apiResponse=JSON.parse(response);
-      var polygonZone = turf.multiPolygon(apiResponse.features);
-
-      var metrosListSelected = [];
-      var datesListSelected = [];
-  
-      var stationsMetro = this.station1.current.state.stationsMetro;
-      // console.log(polygonZone.geometry.coordinates[0]);
-      for (var metro of stationsMetro) {
-  
-        var pointMetro = turf.point([metro.long, metro.lat]);
-        // console.log(polygonZone.geometry.coordinates[0]);
-        // console.log(pointMetro);
-        for (var i = 0; i < polygonZone.geometry.coordinates.length; i++) {
-          var inPolygon = turf.pointsWithinPolygon(pointMetro, polygonZone.geometry.coordinates[i]);
-          if (inPolygon.features.length > 0)
-            metrosListSelected.push(metro);
-        }
-  
-      }
-      console.log(metrosListSelected);
-  
-      for (var date of dataDate) {
-        for (var i = 0; i < metrosListSelected.length; i++) {
-          if (date.metros.includes(metrosListSelected[i].id))
-            datesListSelected.push(date);
-        }
-  
-      }
-      this.state.datesListSelected = datesListSelected;
-  
+    if(this.state.search)
+    {
+      var datesListSelected = this.state.datesListSelected;
       this.setState({
         dates: [datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
         datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
         datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
         datesListSelected[Math.floor(Math.random() * datesListSelected.length)]]
       });
-      console.log(this.state.dates);
-      this.map.current.reset();
+      return;
+    }
+    this.state.search = true;
+    
+
+    //appel a l'API
+    var bodyFormData = new FormData();
+
+    bodyFormData.append('X1', this.station1.current.state.choosenMetro.long);
+    bodyFormData.append('X2', this.station2.current.state.choosenMetro.long);
+    bodyFormData.append('Y1', this.station1.current.state.choosenMetro.lat);
+    bodyFormData.append('Y2', this.station2.current.state.choosenMetro.lat);
+    console.log(bodyFormData);
+    var config = {
+      method: 'post',
+      url: 'https://datinparis.herokuapp.com/login',
+      headers: { "Content-Type": "multipart/form-data" },
+      data: bodyFormData
+    };
+
+    axios(config).then((response) => {
+      console.log(response);
+      var apiResponse = response.data;
+      for (var j = 0; j < apiResponse.length; j++) {
+        var isochrone=JSON.parse(apiResponse[j]);
+
+        var polygonZone = turf.multiPolygon(isochrone.features);
+
+        var metrosListSelected = [];
+        var datesListSelected = this.state.datesListSelected;
+        var stationsMetro = this.station1.current.state.stationsMetro;
+        // console.log(polygonZone.geometry.coordinates[0]);
+        for (var metro of stationsMetro) {
+
+          var pointMetro = turf.point([metro.long, metro.lat]);
+          // console.log(polygonZone.geometry.coordinates[0]);
+          // console.log(pointMetro);
+          for (var i = 0; i < polygonZone.geometry.coordinates.length; i++) {
+            var inPolygon = turf.pointsWithinPolygon(pointMetro, polygonZone.geometry.coordinates[i]);
+            if (inPolygon.features.length > 0)
+              metrosListSelected.push(metro);
+          }
+
+        }
+        console.log(metrosListSelected);
+
+        for (var date of dataDate) {
+          for (var i = 0; i < metrosListSelected.length; i++) {
+            if (date.metros.includes(metrosListSelected[i].id))
+              datesListSelected.push(date);
+          }
+
+        }
+        this.state.datesListSelected = datesListSelected;
+       console.log(datesListSelected);
+
+
+        if(this.state.datesListSelected.length>8 || j == apiResponse.length-1)
+        {
+          console.log(j);
+          
+          this.setState({
+            dates: [datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
+            datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
+            datesListSelected[Math.floor(Math.random() * datesListSelected.length)],
+            datesListSelected[Math.floor(Math.random() * datesListSelected.length)]]
+          });
+          
+          this.map.current.reset();
+          break;
+        }
+       
+      }
 
     });
     //retour GEOJSON intersection
