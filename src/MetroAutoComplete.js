@@ -13,7 +13,7 @@ class MetroAutoComplete extends React.Component {
     super(props);
     this.state = {
       stationsMetro:stationsMetro,
-      choosenMetro:''
+      choosenMetro:{}
     };
   }
 
